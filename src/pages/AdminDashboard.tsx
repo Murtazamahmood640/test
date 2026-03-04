@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
+import { Appointment, MOCK_APPOINTMENTS } from "@/data/mockAppointments";
 
 interface User {
   _id: string;
@@ -52,7 +53,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   
   // Appointments state
-const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>(MOCK_APPOINTMENTS);
   const [statusFilter, setStatusFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [editApt, setEditApt] = useState<Appointment | null>(null);
@@ -80,13 +81,20 @@ const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [newCoupon, setNewCoupon] = useState({ code: "", discountPercentage: "", expiryDate: "" });
   const [editCouponData, setEditCouponData] = useState({ discountPercentage: "", expiryDate: "" });
 
+  // Promos state (for backward compatibility with existing code)
+  const [promos, setPromos] = useState<any[]>([]);
+  const [showAddPromo, setShowAddPromo] = useState(false);
+  const [newPromo, setNewPromo] = useState({ code: "", discountPercentage: "", expiryDate: "" });
+
   // Load users and coupons on mount
   useEffect(() => {
     if (token) {
+      console.log("[v0] Token found, attempting to fetch data with token:", token.substring(0, 20) + "...");
       fetchUsers();
       fetchCoupons();
-          fetchAppointments();
-
+      fetchAppointments();
+    } else {
+      console.log("[v0] No token found - admin is not authenticated");
     }
   }, [token]);
 
