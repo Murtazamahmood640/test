@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -53,7 +53,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   
   // Appointments state
-  const [appointments, setAppointments] = useState<Appointment[]>(MOCK_APPOINTMENTS);
+  const [appointments, setAppointments] = useState<Appointment[]>(MOCK_APPOINTMENTS ?? []);
   const [statusFilter, setStatusFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [editApt, setEditApt] = useState<Appointment | null>(null);
@@ -89,12 +89,9 @@ export default function AdminDashboard() {
   // Load users and coupons on mount
   useEffect(() => {
     if (token) {
-      console.log("[v0] Token found, attempting to fetch data with token:", token.substring(0, 20) + "...");
       fetchUsers();
       fetchCoupons();
       fetchAppointments();
-    } else {
-      console.log("[v0] No token found - admin is not authenticated");
     }
   }, [token]);
 
@@ -367,18 +364,35 @@ const fetchAppointments = async () => {
 
   const handleLogout = () => { logout(); navigate("/admin/login"); };
 
-  const filtered = appointments.filter((a) => {
-    const matchStatus = statusFilter === "All" || a.status === statusFilter;
-    const matchSearch = !search || a.fullName.toLowerCase().includes(search.toLowerCase()) || a.email.toLowerCase().includes(search.toLowerCase()) || a.id.toLowerCase().includes(search.toLowerCase());
-    return matchStatus && matchSearch;
-  });
+  // Safely calculate filtered appointments
+  const filtered = useMemo(() => {
+    if (!appointments || !Array.isArray(appointments)) {
+      return [];
+    }
+    return appointments.filter((a) => {
+      const matchStatus = statusFilter === "All" || a.status === statusFilter;
+      const matchSearch = !search || a.fullName.toLowerCase().includes(search.toLowerCase()) || a.email.toLowerCase().includes(search.toLowerCase()) || a.id.toLowerCase().includes(search.toLowerCase());
+      return matchStatus && matchSearch;
+    });
+  }, [appointments, statusFilter, search]);
 
-  const stats = {
-    total: appointments.length,
-    pending: appointments.filter((a) => a.status === "Pending").length,
-    confirmed: appointments.filter((a) => a.status === "Confirmed").length,
-    revenue: appointments.filter((a) => a.status !== "Cancelled").reduce((sum, a) => sum + a.totalPrice, 0),
-  };
+  // Safely calculate stats
+  const stats = useMemo(() => {
+    if (!appointments || !Array.isArray(appointments)) {
+      return {
+        total: 0,
+        pending: 0,
+        confirmed: 0,
+        revenue: 0,
+      };
+    }
+    return {
+      total: appointments.length,
+      pending: appointments.filter((a) => a.status === "Pending").length,
+      confirmed: appointments.filter((a) => a.status === "Confirmed").length,
+      revenue: appointments.filter((a) => a.status !== "Cancelled").reduce((sum, a) => sum + a.totalPrice, 0),
+    };
+  }, [appointments]);
 
   const handleDelete = (id: string) => { setAppointments((prev) => prev.filter((a) => a.id !== id)); toast.success("Appointment deleted."); };
 
@@ -404,7 +418,14 @@ const fetchAppointments = async () => {
     if (!newPromo.code || !newPromo.discountPercentage || !newPromo.expiryDate) {
       toast.error("Fill all promo fields."); return;
     }
-    setPromos((prev) => [...prev, { id: Date.now().toString(), code: newPromo.code.toUpperCase(), discountPercentage: Number(newPromo.discountPercentage), isActive: true, expiryDate: newPromo.expiryDate }]);
+    const newPromoObj = {
+      id: Date.now().toString(),
+      code: newPromo.code.toUpperCase(),
+      discountPercentage: Number(newPromo.discountPercentage),
+      isActive: true,
+      expiryDate: newPromo.expiryDate
+    };
+    setPromos((prev) => [...prev, newPromoObj]);
     setNewPromo({ code: "", discountPercentage: "", expiryDate: "" });
     setShowAddPromo(false);
     toast.success("Promo code added!");
