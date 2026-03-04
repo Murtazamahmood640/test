@@ -13,7 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -669,7 +669,10 @@ export default function AdminDashboard() {
       {/* View Dialog */}
       <Dialog open={!!viewApt} onOpenChange={() => setViewApt(null)}>
         <DialogContent className="bg-card border-border text-foreground max-w-lg">
-          <DialogHeader><DialogTitle className="font-display text-xl">Appointment Details</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Appointment Details</DialogTitle>
+            <DialogDescription>View the complete appointment information below</DialogDescription>
+          </DialogHeader>
           {viewApt && (
             <div className="space-y-3 text-sm">
               {[["ID", viewApt.id], ["Customer", viewApt.fullName], ["Phone", viewApt.phone], ["Email", viewApt.email], ["Address", viewApt.address], ["Vehicle", `${viewApt.year} ${viewApt.make} ${viewApt.model}`], ["Category", viewApt.vehicleCategory], ["Service", viewApt.serviceType], ["Date", `${viewApt.date} at ${viewApt.timeSlot}`], ["Promo Code", viewApt.promoCode || "None"], ["Status", viewApt.status], ["Total", `$${viewApt.totalPrice.toFixed(2)}`]].map(([label, val]) => (
@@ -683,7 +686,10 @@ export default function AdminDashboard() {
       {/* Edit Dialog */}
       <Dialog open={!!editApt} onOpenChange={() => setEditApt(null)}>
         <DialogContent className="bg-card border-border text-foreground max-w-md">
-          <DialogHeader><DialogTitle className="font-display text-xl">Edit Appointment</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Edit Appointment</DialogTitle>
+            <DialogDescription>Update the appointment status</DialogDescription>
+          </DialogHeader>
           {editApt && (
             <div className="space-y-4">
               <div><Label className="text-foreground">Customer</Label><Input value={editApt.fullName} disabled className="bg-secondary border-border text-muted-foreground mt-1" /></div>
@@ -705,7 +711,10 @@ export default function AdminDashboard() {
       {/* Add User Dialog */}
       <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
         <DialogContent className="bg-card border-border text-foreground max-w-md">
-          <DialogHeader><DialogTitle className="font-display text-xl">Add User</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Add User</DialogTitle>
+            <DialogDescription>Create a new admin or regular user account</DialogDescription>
+          </DialogHeader>
           <div className="space-y-4">
             <div><Label className="text-foreground">Email</Label><Input value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} placeholder="user@example.com" type="email" className="bg-secondary border-border text-foreground mt-1" /></div>
             <div><Label className="text-foreground">Full Name</Label><Input value={newUser.fullName} onChange={(e) => setNewUser({ ...newUser, fullName: e.target.value })} placeholder="John Doe" className="bg-secondary border-border text-foreground mt-1" /></div>
@@ -727,7 +736,10 @@ export default function AdminDashboard() {
       {/* Edit User Dialog */}
       <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
         <DialogContent className="bg-card border-border text-foreground max-w-md">
-          <DialogHeader><DialogTitle className="font-display text-xl">Edit User</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Edit User</DialogTitle>
+            <DialogDescription>Update user details and permissions</DialogDescription>
+          </DialogHeader>
           {editingUser && (
             <div className="space-y-4">
               <div><Label className="text-foreground">Email</Label><Input value={editingUser.email} disabled className="bg-secondary border-border text-muted-foreground mt-1" /></div>
@@ -754,7 +766,10 @@ export default function AdminDashboard() {
       {/* Add Coupon Dialog */}
       <Dialog open={showAddCoupon} onOpenChange={setShowAddCoupon}>
         <DialogContent className="bg-card border-border text-foreground max-w-md">
-          <DialogHeader><DialogTitle className="font-display text-xl">Add Coupon</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Add Coupon</DialogTitle>
+            <DialogDescription>Create a new promotional coupon code</DialogDescription>
+          </DialogHeader>
           <div className="space-y-4">
             <div><Label className="text-foreground">Code</Label><Input value={newCoupon.code} onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value })} placeholder="e.g. SUMMER20" className="bg-secondary border-border text-foreground mt-1 uppercase" /></div>
             <div><Label className="text-foreground">Discount %</Label><Input type="number" value={newCoupon.discountPercentage} onChange={(e) => setNewCoupon({ ...newCoupon, discountPercentage: e.target.value })} placeholder="e.g. 20" min="1" max="100" className="bg-secondary border-border text-foreground mt-1" /></div>
@@ -770,7 +785,10 @@ export default function AdminDashboard() {
       {/* Edit Coupon Dialog */}
       <Dialog open={!!editingCoupon} onOpenChange={() => setEditingCoupon(null)}>
         <DialogContent className="bg-card border-border text-foreground max-w-md">
-          <DialogHeader><DialogTitle className="font-display text-xl">Edit Coupon</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Edit Coupon</DialogTitle>
+            <DialogDescription>Update coupon discount and expiry details</DialogDescription>
+          </DialogHeader>
           {editingCoupon && (
             <div className="space-y-4">
               <div><Label className="text-foreground">Code</Label><Input value={editingCoupon.code} disabled className="bg-secondary border-border text-muted-foreground mt-1" /></div>
