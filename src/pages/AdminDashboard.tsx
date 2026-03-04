@@ -86,6 +86,10 @@ export default function AdminDashboard() {
   const [showAddPromo, setShowAddPromo] = useState(false);
   const [newPromo, setNewPromo] = useState({ code: "", discountPercentage: "", expiryDate: "" });
 
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'appointment' | 'user' | 'coupon' | null; id: string }>({ type: null, id: '' });
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Load users and coupons on mount
   useEffect(() => {
     if (token) {
@@ -231,26 +235,7 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return;
-
-    try {
-      const response = await fetch(`http://localhost:3000/api/users?id=${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
-        toast.success('User deleted successfully');
-        fetchUsers();
-      } else {
-        toast.error(data.message || 'Failed to delete user');
-      }
-    } catch (error) {
-      console.error("[v0] Error deleting user:", error);
-      toast.error('Error deleting user');
-    }
+    setDeleteConfirm({ type: 'user', id: userId });
   };
 
   const handleCreateCoupon = async () => {
@@ -343,10 +328,63 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteCoupon = async (couponId: string) => {
-    if (!window.confirm('Are you sure you want to delete this coupon?')) return;
+    setDeleteConfirm({ type: 'coupon', id: couponId });
+  };
+
+  // Appointment handlers
+  const handleUpdateAppointment = async (appointmentId: string) => {
+    if (!editStatus) {
+      toast.error('Please select a status');
+      return;
+    }
 
     try {
-      const response = await fetch(`http://localhost:3000/api/coupons?id=${couponId}`, {
+      const response = await fetch(`http://localhost:3000/api/appointments?id=${appointmentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: editStatus })
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Appointment updated successfully');
+        setEditApt(null);
+        setEditStatus('');
+        fetchAppointments();
+      } else {
+        toast.error(data.message || 'Failed to update appointment');
+      }
+    } catch (error) {
+      console.error("[v0] Error updating appointment:", error);
+      toast.error('Error updating appointment');
+    }
+  };
+
+  const handleDeleteAppointment = async (appointmentId: string) => {
+    setDeleteConfirm({ type: 'appointment', id: appointmentId });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.type || !deleteConfirm.id) return;
+    
+    setIsDeleting(true);
+    try {
+      let endpoint = '';
+      switch (deleteConfirm.type) {
+        case 'appointment':
+          endpoint = `http://localhost:3000/api/appointments?id=${deleteConfirm.id}`;
+          break;
+        case 'user':
+          endpoint = `http://localhost:3000/api/users?id=${deleteConfirm.id}`;
+          break;
+        case 'coupon':
+          endpoint = `http://localhost:3000/api/coupons?id=${deleteConfirm.id}`;
+          break;
+      }
+
+      const response = await fetch(endpoint, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -354,14 +392,43 @@ export default function AdminDashboard() {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success('Coupon deleted successfully');
-        fetchCoupons();
+        toast.success(`${deleteConfirm.type.charAt(0).toUpperCase() + deleteConfirm.type.slice(1)} deleted successfully`);
+        setDeleteConfirm({ type: null, id: '' });
+        
+        if (deleteConfirm.type === 'appointment') fetchAppointments();
+        else if (deleteConfirm.type === 'user') fetchUsers();
+        else if (deleteConfirm.type === 'coupon') fetchCoupons();
       } else {
-        toast.error(data.message || 'Failed to delete coupon');
+        toast.error(data.message || `Failed to delete ${deleteConfirm.type}`);
       }
     } catch (error) {
-      console.error("[v0] Error deleting coupon:", error);
-      toast.error('Error deleting coupon');
+      console.error("[v0] Error deleting:", error);
+      toast.error(`Error deleting ${deleteConfirm.type}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleToggleUserStatus = async (userId: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/users?id=${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ isActive: !currentStatus })
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('User status updated');
+        fetchUsers();
+      } else {
+        toast.error(data.message || 'Failed to update user');
+      }
+    } catch (error) {
+      console.error("[v0] Error toggling user status:", error);
+      toast.error('Error updating user');
     }
   };
 
@@ -374,7 +441,8 @@ export default function AdminDashboard() {
     }
     return appointments.filter((a) => {
       const matchStatus = statusFilter === "All" || a.status === statusFilter;
-      const matchSearch = !search || a.fullName.toLowerCase().includes(search.toLowerCase()) || a.email.toLowerCase().includes(search.toLowerCase()) || a.id.toLowerCase().includes(search.toLowerCase());
+      const searchId = a._id || a.id || '';
+      const matchSearch = !search || a.fullName.toLowerCase().includes(search.toLowerCase()) || a.email.toLowerCase().includes(search.toLowerCase()) || searchId.toLowerCase().includes(search.toLowerCase());
       return matchStatus && matchSearch;
     });
   }, [appointments, statusFilter, search]);
@@ -536,7 +604,7 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-1">
                             <button onClick={() => setViewApt(apt)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"><Eye className="w-4 h-4" /></button>
                             <button onClick={() => { setEditApt(apt); setEditStatus(apt.status); }} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-4 h-4" /></button>
-                            <button onClick={() => handleDelete(apt.id)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={() => handleDeleteAppointment(apt._id || apt.id || '')} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </td>
                       </tr>
@@ -598,7 +666,8 @@ export default function AdminDashboard() {
                         <td className="px-4 py-3"><Badge variant="outline" className={user.isActive ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-destructive/20 text-red-400 border-destructive/30'}>{user.isActive ? 'Active' : 'Inactive'}</Badge></td>
                         <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(user.createdAt).toLocaleDateString()}</td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2">
+                            <Switch checked={user.isActive} onCheckedChange={() => handleToggleUserStatus(user._id, user.isActive)} className="data-[state=checked]:bg-emerald-500" />
                             <button onClick={() => { setEditingUser(user); setEditUserData({ fullName: user.fullName, role: user.role, isActive: user.isActive }); }} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-4 h-4" /></button>
                             <button onClick={() => handleDeleteUser(user._id)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
                           </div>
@@ -703,7 +772,7 @@ export default function AdminDashboard() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditApt(null)} className="border-border text-muted-foreground">Cancel</Button>
-            <Button onClick={handleEditSave} className="bg-gradient-sky text-primary-foreground font-semibold hover:opacity-90">Save Changes</Button>
+            <Button onClick={() => handleUpdateAppointment(editApt._id || editApt.id || '')} className="bg-gradient-sky text-primary-foreground font-semibold hover:opacity-90">Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -799,6 +868,25 @@ export default function AdminDashboard() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingCoupon(null)} className="border-border text-muted-foreground">Cancel</Button>
             <Button onClick={() => editingCoupon && handleUpdateCoupon(editingCoupon._id)} className="bg-gradient-sky text-primary-foreground font-semibold hover:opacity-90">Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirm.type !== null} onOpenChange={() => setDeleteConfirm({ type: null, id: '' })}>
+        <DialogContent className="bg-card border-border text-foreground max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-red-400">Confirm Deletion</DialogTitle>
+            <DialogDescription>This action cannot be undone. Are you sure?</DialogDescription>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground">
+            You are about to permanently delete this {deleteConfirm.type}. This cannot be reversed.
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirm({ type: null, id: '' })} disabled={isDeleting} className="border-border text-muted-foreground">Cancel</Button>
+            <Button onClick={confirmDelete} disabled={isDeleting} className="bg-red-500 text-white hover:bg-red-600">
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

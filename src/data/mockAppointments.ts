@@ -1,5 +1,6 @@
 export interface Appointment {
-  id: string;
+  _id?: string;
+  id?: string;
   fullName: string;
   phone: string;
   email: string;
@@ -21,6 +22,7 @@ export interface Appointment {
 
 export const MOCK_APPOINTMENTS: Appointment[] = [
   {
+    _id: "507f1f77bcf86cd799439011",
     id: "APT-001",
     fullName: "James Morrison",
     phone: "(555) 234-5678",
@@ -41,6 +43,7 @@ export const MOCK_APPOINTMENTS: Appointment[] = [
     createdAt: "2026-02-20T10:30:00Z",
   },
   {
+    _id: "507f1f77bcf86cd799439012",
     id: "APT-002",
     fullName: "Sarah Kim",
     phone: "(555) 345-6789",
@@ -61,6 +64,7 @@ export const MOCK_APPOINTMENTS: Appointment[] = [
     createdAt: "2026-02-21T14:15:00Z",
   },
   {
+    _id: "507f1f77bcf86cd799439013",
     id: "APT-003",
     fullName: "Michael Rivera",
     phone: "(555) 456-7890",
@@ -81,6 +85,7 @@ export const MOCK_APPOINTMENTS: Appointment[] = [
     createdAt: "2026-02-18T09:00:00Z",
   },
   {
+    _id: "507f1f77bcf86cd799439014",
     id: "APT-004",
     fullName: "Emily Davis",
     phone: "(555) 567-8901",
@@ -101,6 +106,7 @@ export const MOCK_APPOINTMENTS: Appointment[] = [
     createdAt: "2026-02-23T16:45:00Z",
   },
   {
+    _id: "507f1f77bcf86cd799439015",
     id: "APT-005",
     fullName: "David Lee",
     phone: "(555) 678-9012",
@@ -121,6 +127,7 @@ export const MOCK_APPOINTMENTS: Appointment[] = [
     createdAt: "2026-02-22T11:20:00Z",
   },
   {
+    _id: "507f1f77bcf86cd799439016",
     id: "APT-006",
     fullName: "Amanda Torres",
     phone: "(555) 789-0123",
