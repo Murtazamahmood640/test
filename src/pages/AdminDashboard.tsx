@@ -134,8 +134,9 @@ const fetchAppointments = async () => {
 
     const data = await response.json();
 
-    if (data.success) {
-      setAppointments(data.appointments);
+    if (data.success && (data.appointments || data.data)) {
+      // API returns either data.appointments or data.data
+      setAppointments(data.appointments || data.data);
     } else {
       toast.error(data.message || "Failed to load appointments");
     }
