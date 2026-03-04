@@ -120,31 +120,33 @@ export default function AdminDashboard() {
       setUsersLoading(false);
     }
   };
-const fetchAppointments = async () => {
-  try {
-    const response = await fetch("http://localhost:3000/api/appointments", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch appointments");
+  const fetchAppointments = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/appointments", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch appointments");
+      }
+
+      const data = await response.json();
+
+      if (data.success && (data.appointments || data.data)) {
+        // API returns either data.appointments or data.data
+        setAppointments(data.appointments || data.data);
+      } else {
+        toast.error(data.message || "Failed to load appointments");
+      }
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+      toast.error("Error loading appointments");
     }
+  };
 
-    const data = await response.json();
-
-    if (data.success && (data.appointments || data.data)) {
-      // API returns either data.appointments or data.data
-      setAppointments(data.appointments || data.data);
-    } else {
-      toast.error(data.message || "Failed to load appointments");
-    }
-  } catch (error) {
-    console.error("Error fetching appointments:", error);
-    toast.error("Error loading appointments");
-  }
-};
   const fetchCoupons = async () => {
     setCouponsLoading(true);
     try {
