@@ -2,6 +2,14 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { connectDB } from '../backend/config/database.ts';
 import { Contact } from '../backend/models/Contact.ts';
 import { sendEmail, getContactAcknowledgmentEmail } from '../backend/services/emailService.ts';
+import { verifyToken, type JwtPayload } from '../backend/utils/jwt.ts';
+
+async function getTokenFromRequest(req: VercelRequest): Promise<JwtPayload | null> {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return null;
+  return verifyToken(token);
+}
 
 export default async function handler(
   req: VercelRequest,
@@ -62,10 +70,117 @@ export default async function handler(
       });
     } else if (req.method === 'GET') {
       // Get all contact submissions (admin only)
-      const contacts = await Contact.find().sort({ createdAt: -1 });
+      const user = await getTokenFromRequest(req);
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+      }
+
+      if (user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Admin access required',
+        });
+      }
+
+      const { search, status } = req.query;
+      let query: any = {};
+
+      if (search) {
+        query.$or = [
+          { email: { $regex: search, $options: 'i' } },
+          { fullName: { $regex: search, $options: 'i' } },
+          { subject: { $regex: search, $options: 'i' } },
+        ];
+      }
+
+      if (status && status !== 'all') {
+        query.status = status;
+      }
+
+      const contacts = await Contact.find(query).sort({ createdAt: -1 }).limit(100);
       return res.status(200).json({
         success: true,
-        data: contacts,
+        contacts,
+      });
+    } else if (req.method === 'PUT') {
+      // Update contact status (admin only)
+      const user = await getTokenFromRequest(req);
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Admin access required',
+        });
+      }
+
+      const { id } = req.query;
+      const { status } = req.body;
+
+      if (!id || typeof id !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Contact ID is required',
+        });
+      }
+
+      if (!['New', 'Reviewed', 'Responded', 'Resolved'].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid status',
+        });
+      }
+
+      const updatedContact = await Contact.findByIdAndUpdate(
+        id,
+        { status },
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedContact) {
+        return res.status(404).json({
+          success: false,
+          message: 'Contact not found',
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Contact updated successfully',
+        contact: updatedContact,
+      });
+    } else if (req.method === 'DELETE') {
+      // Delete contact (admin only)
+      const user = await getTokenFromRequest(req);
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Admin access required',
+        });
+      }
+
+      const { id } = req.query;
+
+      if (!id || typeof id !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Contact ID is required',
+        });
+      }
+
+      const deletedContact = await Contact.findByIdAndDelete(id);
+
+      if (!deletedContact) {
+        return res.status(404).json({
+          success: false,
+          message: 'Contact not found',
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Contact deleted successfully',
       });
     } else {
       return res.status(405).json({
