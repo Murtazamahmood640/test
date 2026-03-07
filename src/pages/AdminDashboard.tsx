@@ -53,7 +53,8 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   
   // Appointments state
-  const [appointments, setAppointments] = useState<Appointment[]>(MOCK_APPOINTMENTS ?? []);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [editApt, setEditApt] = useState<Appointment | null>(null);
@@ -126,6 +127,7 @@ export default function AdminDashboard() {
   };
 
   const fetchAppointments = async () => {
+    setAppointmentsLoading(true);
     try {
       const response = await fetch("http://localhost:3000/api/appointments");
       
@@ -138,6 +140,7 @@ export default function AdminDashboard() {
       if (data.success) {
         const appointmentData = Array.isArray(data.data) ? data.data : data.appointments || [];
         setAppointments(appointmentData);
+        console.log("[v0] Loaded appointments:", appointmentData.length);
       } else {
         console.error("[v0] Failed to load appointments:", data.message);
         toast.error(data.message || "Failed to load appointments");
@@ -145,6 +148,8 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("[v0] Error fetching appointments:", error);
       toast.error("Error loading appointments");
+    } finally {
+      setAppointmentsLoading(false);
     }
   };
 
@@ -442,6 +447,13 @@ export default function AdminDashboard() {
     }
   };
 
+  // Calculate price with coupon discount
+  const calculatePrice = (originalPrice: number, discountPercentage: number = 0) => {
+    if (discountPercentage <= 0) return originalPrice;
+    const discount = (originalPrice * discountPercentage) / 100;
+    return Math.round((originalPrice - discount) * 100) / 100;
+  };
+
   const handleLogout = () => { logout(); navigate("/admin/login"); };
 
   // Safely calculate filtered appointments
@@ -589,10 +601,12 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.length === 0 ? (
+                    {appointmentsLoading ? (
+                      <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">Loading appointments...</td></tr>
+                    ) : filtered.length === 0 ? (
                       <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">No appointments found.</td></tr>
                     ) : filtered.map((apt) => (
-                      <tr key={apt.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                      <tr key={apt._id || apt.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
                         <td className="px-4 py-3 text-primary font-mono text-xs">{apt.id}</td>
                         <td className="px-4 py-3"><div className="text-foreground font-medium">{apt.fullName}</div><div className="text-xs text-muted-foreground">{apt.email}</div></td>
                         <td className="px-4 py-3 text-foreground">{apt.serviceType}</td>
@@ -602,7 +616,12 @@ export default function AdminDashboard() {
                           <div className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> {apt.timeSlot}</div>
                         </td>
                         <td className="px-4 py-3"><Badge variant="outline" className={`text-xs ${STATUS_COLORS[apt.status]}`}>{apt.status}</Badge></td>
-                        <td className="px-4 py-3"><span className="text-foreground font-semibold">${apt.totalPrice.toFixed(2)}</span>{apt.discountApplied && <div className="text-xs text-primary">Promo applied</div>}</td>
+                        <td className="px-4 py-3">
+                          <span className="text-foreground font-semibold">${apt.totalPrice.toFixed(2)}</span>
+                          {apt.promoCode && apt.discountApplied && (
+                            <div className="text-xs text-primary">Code: {apt.promoCode}</div>
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
                             <button onClick={() => setViewApt(apt)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"><Eye className="w-4 h-4" /></button>
