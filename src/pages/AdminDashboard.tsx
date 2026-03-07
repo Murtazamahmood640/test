@@ -465,14 +465,7 @@ export default function AdminDashboard() {
     };
   }, [appointments]);
 
-  const handleDelete = (id: string) => { setAppointments((prev) => prev.filter((a) => a.id !== id)); toast.success("Appointment deleted."); };
 
-  const handleEditSave = () => {
-    if (!editApt) return;
-    setAppointments((prev) => prev.map((a) => (a.id === editApt.id ? { ...a, status: editStatus as Appointment["status"] } : a)));
-    toast.success("Appointment updated.");
-    setEditApt(null);
-  };
 
   const handleExportCSV = () => {
     const headers = "ID,Name,Phone,Email,Service,Vehicle,Date,Time,Status,Total\n";
