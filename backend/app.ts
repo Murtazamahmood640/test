@@ -6,7 +6,6 @@ import { connectDB } from './config/database.ts';
 // Import route handlers
 import authHandler from '../api/auth.ts';
 import appointmentsHandler from '../api/appointments.ts';
-import contactHandler from '../api/contact.ts';
 import couponsHandler from '../api/coupons.ts';
 import usersHandler from '../api/users.ts';
 
@@ -77,14 +76,6 @@ app.delete('/api/users', async (req, res) => {
   await usersHandler(req as any, res);
 });
 
-
-app.post('/api/contact', async (req, res) => {
-  await contactHandler(req as any, res);
-});
-
-app.get('/api/contact', async (req, res) => {
-  await contactHandler(req as any, res);
-});
 
 // Coupons routes
 app.get('/api/coupons', async (req, res) => {

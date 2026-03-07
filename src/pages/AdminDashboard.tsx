@@ -87,41 +87,8 @@ export default function AdminDashboard() {
   const [newPromo, setNewPromo] = useState({ code: "", discountPercentage: "", expiryDate: "" });
 
   // Delete confirmation state
-  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'appointment' | 'user' | 'coupon' | 'contact' | null; id: string }>({ type: null, id: '' });
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'appointment' | 'user' | 'coupon' | null; id: string }>({ type: null, id: '' });
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // Contacts state
-  const [contacts, setContacts] = useState<any[]>([]);
-  const [contactsLoading, setContactsLoading] = useState(false);
-  const [contactSearch, setContactSearch] = useState('');
-  const [contactStatusFilter, setContactStatusFilter] = useState('all');
-  const [viewContact, setViewContact] = useState<any>(null);
-  const [editingContact, setEditingContact] = useState<any>(null);
-  const [editContactStatus, setEditContactStatus] = useState('');
-
-  const fetchContacts = async () => {
-    setContactsLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (contactSearch) params.append('search', contactSearch);
-      if (contactStatusFilter !== 'all') params.append('status', contactStatusFilter);
-
-      const response = await fetch(`http://localhost:3000/api/contact?${params}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setContacts(data.contacts || []);
-      } else {
-        toast.error(data.message || 'Failed to load contacts');
-      }
-    } catch (error) {
-      console.error("[v0] Error fetching contacts:", error);
-      toast.error('Error loading contacts');
-    } finally {
-      setContactsLoading(false);
-    }
-  };
 
   // Load users and coupons on mount
   useEffect(() => {
@@ -129,7 +96,6 @@ export default function AdminDashboard() {
       fetchUsers();
       fetchCoupons();
       fetchAppointments();
-      fetchContacts();
     }
   }, [token]);
 
@@ -590,9 +556,6 @@ export default function AdminDashboard() {
             <TabsTrigger value="coupons" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Tag className="w-4 h-4 mr-1" /> Coupons
             </TabsTrigger>
-            <TabsTrigger value="contacts" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <CheckCircle className="w-4 h-4 mr-1" /> Contacts
-            </TabsTrigger>
           </TabsList>
 
           {/* Appointments Tab */}
@@ -772,60 +735,6 @@ export default function AdminDashboard() {
               ))}
             </div>
           </TabsContent>
-
-          {/* Contacts Tab */}
-          <TabsContent value="contacts" className="space-y-4">
-            <div className="flex gap-3 mb-4">
-              <Input placeholder="Search contacts..." value={contactSearch} onChange={(e) => setContactSearch(e.target.value)} onBlur={fetchContacts} className="bg-secondary border-border text-foreground" />
-              <Select value={contactStatusFilter} onValueChange={(value) => { setContactStatusFilter(value); setTimeout(fetchContacts, 100); }}>
-                <SelectTrigger className="w-40 bg-secondary border-border text-foreground"><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-card border-border">
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Reviewed">Reviewed</SelectItem>
-                  <SelectItem value="Responded">Responded</SelectItem>
-                  <SelectItem value="Resolved">Resolved</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="border border-border rounded-lg overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-secondary border-b border-border">
-                  <tr>
-                    {["Name", "Email", "Subject", "Status", "Actions"].map((header) => (
-                      <th key={header} className="px-4 py-3 text-left font-semibold text-foreground">{header}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {contactsLoading ? (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Loading contacts...</td></tr>
-                  ) : contacts.length === 0 ? (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No contacts found</td></tr>
-                  ) : (
-                    contacts.map((contact) => (
-                      <tr key={contact._id} className="hover:bg-secondary/50 transition-colors">
-                        <td className="px-4 py-3 text-foreground">{contact.fullName}</td>
-                        <td className="px-4 py-3 text-foreground text-sm">{contact.email}</td>
-                        <td className="px-4 py-3 text-foreground">{contact.subject}</td>
-                        <td className="px-4 py-3">
-                          <Badge className={`${contact.status === 'New' ? 'bg-blue-500' : contact.status === 'Reviewed' ? 'bg-yellow-500' : contact.status === 'Responded' ? 'bg-green-500' : 'bg-emerald-500'} text-white`}>{contact.status}</Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => setViewContact(contact)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"><Eye className="w-4 h-4" /></button>
-                            <button onClick={() => { setEditingContact(contact); setEditContactStatus(contact.status); }} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-4 h-4" /></button>
-                            <button onClick={() => setDeleteConfirm({ type: 'contact', id: contact._id })} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </TabsContent>
         </Tabs>
       </div>
 
@@ -962,77 +871,6 @@ export default function AdminDashboard() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingCoupon(null)} className="border-border text-muted-foreground">Cancel</Button>
             <Button onClick={() => editingCoupon && handleUpdateCoupon(editingCoupon._id)} className="bg-gradient-sky text-primary-foreground font-semibold hover:opacity-90">Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* View Contact Dialog */}
-      <Dialog open={!!viewContact} onOpenChange={() => setViewContact(null)}>
-        <DialogContent className="bg-card border-border text-foreground max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl">Contact Details</DialogTitle>
-            <DialogDescription>Full contact message and information</DialogDescription>
-          </DialogHeader>
-          {viewContact && (
-            <div className="space-y-4">
-              <div><Label className="text-foreground font-semibold">Name</Label><p className="text-foreground">{viewContact.fullName}</p></div>
-              <div><Label className="text-foreground font-semibold">Email</Label><p className="text-foreground">{viewContact.email}</p></div>
-              <div><Label className="text-foreground font-semibold">Phone</Label><p className="text-foreground">{viewContact.phone}</p></div>
-              <div><Label className="text-foreground font-semibold">Subject</Label><p className="text-foreground">{viewContact.subject}</p></div>
-              <div><Label className="text-foreground font-semibold">Message</Label><p className="text-foreground whitespace-pre-wrap">{viewContact.message}</p></div>
-              <div><Label className="text-foreground font-semibold">Status</Label><Badge className="bg-blue-500 text-white">{viewContact.status}</Badge></div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setViewContact(null)} className="border-border text-muted-foreground">Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Contact Status Dialog */}
-      <Dialog open={!!editingContact} onOpenChange={() => setEditingContact(null)}>
-        <DialogContent className="bg-card border-border text-foreground max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl">Update Contact Status</DialogTitle>
-            <DialogDescription>Change the contact submission status</DialogDescription>
-          </DialogHeader>
-          {editingContact && (
-            <div className="space-y-4">
-              <div>
-                <Label className="text-foreground">Current Status</Label>
-                <Select value={editContactStatus} onValueChange={setEditContactStatus}>
-                  <SelectTrigger className="bg-secondary border-border text-foreground mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    <SelectItem value="New">New</SelectItem>
-                    <SelectItem value="Reviewed">Reviewed</SelectItem>
-                    <SelectItem value="Responded">Responded</SelectItem>
-                    <SelectItem value="Resolved">Resolved</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingContact(null)} className="border-border text-muted-foreground">Cancel</Button>
-            <Button onClick={async () => {
-              try {
-                const response = await fetch(`http://localhost:3000/api/contact?id=${editingContact._id}`, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                  body: JSON.stringify({ status: editContactStatus })
-                });
-                const data = await response.json();
-                if (data.success) {
-                  toast.success('Contact updated successfully');
-                  setEditingContact(null);
-                  fetchContacts();
-                } else {
-                  toast.error(data.message || 'Failed to update contact');
-                }
-              } catch (error) {
-                toast.error('Error updating contact');
-              }
-            }} className="bg-gradient-sky text-primary-foreground font-semibold hover:opacity-90">Save Status</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
